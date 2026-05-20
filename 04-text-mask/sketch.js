@@ -564,42 +564,42 @@ function createControls() {
   colLabel = createDiv();
   colLabel.parent(panel);
 
-  colSlider = createSlider(40, 260, 59, 1);
+  colSlider = createSlider(40, 260, 60, 1);
   colSlider.parent(panel);
   colSlider.size(150);
 
   rowLabel = createDiv();
   rowLabel.parent(panel);
 
-  rowSlider = createSlider(20, 160, 63, 1);
+  rowSlider = createSlider(20, 160, 60, 1);
   rowSlider.parent(panel);
   rowSlider.size(150);
 
   sizeLabel = createDiv();
   sizeLabel.parent(panel);
 
-  sizeSlider = createSlider(0.1, 1.0, 0.52, 0.01);
+  sizeSlider = createSlider(0.1, 1.0, 0.50, 0.01);
   sizeSlider.parent(panel);
   sizeSlider.size(150);
 
   lineRowsLabel = createDiv();
   lineRowsLabel.parent(panel);
 
-  lineRowsSlider = createSlider(4, 80, 22, 1);
+  lineRowsSlider = createSlider(4, 80, 30, 1);
   lineRowsSlider.parent(panel);
   lineRowsSlider.size(150);
 
   lineGapLabel = createDiv();
   lineGapLabel.parent(panel);
 
-  lineGapSlider = createSlider(0, 16, 3, 1);
+  lineGapSlider = createSlider(0, 16, 0, 1);
   lineGapSlider.parent(panel);
   lineGapSlider.size(150);
 
   thresholdLabel = createDiv();
   thresholdLabel.parent(panel);
 
-  thresholdSlider = createSlider(1, 254, 59, 1);
+  thresholdSlider = createSlider(1, 254, 65, 1);
   thresholdSlider.parent(panel);
   thresholdSlider.size(150);
 

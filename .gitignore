@@ -3,3 +3,6 @@ node_modules/
 .vscode/
 .idea/
 *.log
+
+# Large original (uncompressed) preview videos — keep only web-optimized .mp4
+*.orig.mp4

@@ -1,29 +1,21 @@
 const fg = '#1697ff';
-const numberFg = '#000';
 const bg = '#000';
-
-const CLOCK_DOT_BOOST = 1.65;
 
 let panel;
 
 let sizeSlider;
 let densitySlider;
-let textSizeSlider;
+let speedSlider;
 
 let sizeLabel;
 let densityLabel;
-let textSizeLabel;
-
-let textMask;
+let speedLabel;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   frameRate(30);
   pixelDensity(1);
   noStroke();
-
-  textMask = createGraphics(width, height);
-  textMask.pixelDensity(1);
 
   createControls();
 }
@@ -32,137 +24,21 @@ function draw() {
   background(bg);
   updateLabels();
 
-  const t = millis() / 1000;
+  const t = millis() / 1000 * speedSlider.value();
 
   const dotDensity = densitySlider.value();
   const dotScale = sizeSlider.value();
-  const textScale = textSizeSlider.value();
 
   const step = min(width, height) / dotDensity;
   const dotSize = step * dotScale;
 
-  const timeLabel = getTimeLabel();
-  makeTextMask(timeLabel, textScale);
-
-  textMask.loadPixels();
-
   for (let y = step / 2; y < height; y += step) {
     for (let x = step / 2; x < width; x += step) {
-      const baseTone = getGenerativeTone(x, y, t);
-      const maskContext = getMaskContextFromRenderedText(x, y, step);
-
-      let tone = baseTone;
-      tone = stabilizeToneNearText(tone, maskContext);
-
-      const bgFilled = orderedDither(x, y, tone, step);
-
-      const localDotSize =
-        dotSize * lerp(1.0, CLOCK_DOT_BOOST, maskContext.proximity);
-
-      let numberFilled = false;
-
-      if (maskContext.glyphStrength > 0.12) {
-        const numberTone = constrain(
-          0.78 + maskContext.glyphStrength * 0.28 - baseTone * 0.08,
-          0,
-          1
-        );
-
-        numberFilled = orderedDither(
-          x + step * 0.5,
-          y + step * 0.5,
-          numberTone,
-          step
-        );
-      }
-
-      drawDot(
-        x,
-        y,
-        localDotSize,
-        bgFilled,
-        numberFilled,
-        maskContext.glyphStrength
-      );
+      const tone = getGenerativeTone(x, y, t);
+      const filled = orderedDither(x, y, tone, step);
+      drawDot(x, y, dotSize, filled);
     }
   }
-}
-
-function getTimeLabel() {
-  const h = nf(hour(), 2);
-  const m = nf(minute(), 2);
-  const s = nf(second(), 2);
-
-  return h + ':' + m + ':' + s;
-}
-
-function makeTextMask(label, textScale) {
-  textMask.clear();
-  textMask.background(0, 0);
-
-  textMask.noStroke();
-  textMask.fill(255);
-  textMask.textFont('Inter, Arial, Helvetica, sans-serif');
-  textMask.textStyle(BOLD);
-  textMask.textAlign(CENTER, CENTER);
-
-  const baseFontSize = min(width * 0.175, height * 0.37);
-  const fontSize = baseFontSize * textScale;
-
-  textMask.textSize(fontSize);
-
-  textMask.text(
-    label,
-    width * 0.5,
-    height * 0.52
-  );
-}
-
-function getMaskContextFromRenderedText(x, y, step) {
-  const glyph = sampleTextMask(x, y);
-
-  const near1 =
-    sampleTextMask(x - step * 1.5, y) +
-    sampleTextMask(x + step * 1.5, y) +
-    sampleTextMask(x, y - step * 1.5) +
-    sampleTextMask(x, y + step * 1.5);
-
-  const near2 =
-    sampleTextMask(x - step * 3.0, y) +
-    sampleTextMask(x + step * 3.0, y) +
-    sampleTextMask(x, y - step * 3.0) +
-    sampleTextMask(x, y + step * 3.0);
-
-  const proximity = constrain(
-    glyph + near1 * 0.45 + near2 * 0.18,
-    0,
-    1
-  );
-
-  return {
-    glyphStrength: glyph,
-    proximity: proximity
-  };
-}
-
-function sampleTextMask(x, y) {
-  const ix = floor(constrain(x, 0, width - 1));
-  const iy = floor(constrain(y, 0, height - 1));
-
-  const idx = 4 * (iy * width + ix);
-  return textMask.pixels[idx + 3] / 255;
-}
-
-function stabilizeToneNearText(tone, maskContext) {
-  const glyph = maskContext.glyphStrength;
-  const proximity = maskContext.proximity;
-
-  const halo = max(proximity - glyph * 0.65, 0);
-
-  tone = lerp(tone, 0.98, glyph * 0.88);
-  tone = lerp(tone, 0.02, halo * 0.48);
-
-  return constrain(tone, 0, 1);
 }
 
 function getGenerativeTone(x, y, t) {
@@ -219,21 +95,9 @@ function orderedDither(x, y, tone, step) {
   return tone > threshold;
 }
 
-function drawDot(x, y, d, bgFilled, numberFilled, glyphStrength) {
+function drawDot(x, y, d, filled) {
   noStroke();
-
-  if (glyphStrength > 0.12) {
-    if (numberFilled) {
-      fill(numberFg);
-    } else {
-      fill(fg);
-    }
-  } else if (bgFilled) {
-    fill(fg);
-  } else {
-    fill(bg);
-  }
-
+  fill(filled ? fg : bg);
   ellipse(x, y, d, d);
 }
 
@@ -259,22 +123,22 @@ function createControls() {
   densityLabel = createDiv();
   densityLabel.parent(panel);
 
-  densitySlider = createSlider(30, 180, 138, 1);
+  densitySlider = createSlider(30, 220, 140, 1);
   densitySlider.parent(panel);
   densitySlider.size(150);
 
-  textSizeLabel = createDiv();
-  textSizeLabel.parent(panel);
+  speedLabel = createDiv();
+  speedLabel.parent(panel);
 
-  textSizeSlider = createSlider(0.6, 1.8, 1.5, 0.01);
-  textSizeSlider.parent(panel);
-  textSizeSlider.size(150);
+  speedSlider = createSlider(0.1, 3.0, 1.0, 0.01);
+  speedSlider.parent(panel);
+  speedSlider.size(150);
 }
 
 function updateLabels() {
   sizeLabel.html('Ellipse Size: ' + nf(sizeSlider.value(), 1, 2));
   densityLabel.html('Dot Density: ' + densitySlider.value());
-  textSizeLabel.html('Text Size: ' + nf(textSizeSlider.value(), 1, 2));
+  speedLabel.html('Speed: ' + nf(speedSlider.value(), 1, 2));
 }
 
 function smoothstep(edge0, edge1, x) {
@@ -284,13 +148,10 @@ function smoothstep(edge0, edge1, x) {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-
-  textMask = createGraphics(width, height);
-  textMask.pixelDensity(1);
 }
 
 function keyPressed() {
   if (key === 's' || key === 'S') {
-    saveCanvas('time_dot_field_dithered_number_layer', 'png');
+    saveCanvas('dither_field', 'png');
   }
 }
