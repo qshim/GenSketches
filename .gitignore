@@ -6,3 +6,4 @@ node_modules/
 
 # Large original (uncompressed) preview videos — keep only web-optimized .mp4
 *.orig.mp4
+*.bak

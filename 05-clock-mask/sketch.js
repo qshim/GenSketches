@@ -32,7 +32,9 @@ function draw() {
   const step = min(width, height) / dotDensity;
   const dotSize = step * dotScale;
 
-  for (let y = step / 2; y < height; y += step) {
+  // Only render the front (top) half of the canvas.
+  const yLimit = height / 2;
+  for (let y = step / 2; y < yLimit; y += step) {
     for (let x = step / 2; x < width; x += step) {
       const tone = getGenerativeTone(x, y, t);
       const filled = orderedDither(x, y, tone, step);

@@ -167,6 +167,90 @@
       } else { ensureButton(); }
     })();
     </script>
+        <script>
+    /* nav-marker — prev/next arrows on the page edges */
+    (function(){
+      var NAV_ORDER = [
+        '01-morphing-grid',
+        '02-wave-squares',
+        '03-wave-circles',
+        '05-clock-mask',
+        '06-living-orb',
+        '08-breathing-chord',
+        '09-breathing-chord-b',
+        '11-rect-of-circles',
+        '12-rect-of-circles-b'
+      ];
+      // Skip in headless/?hide=1 capture mode
+      if (new URLSearchParams(location.search).get('hide') === '1') return;
+
+      var parts = location.pathname.split('/').filter(Boolean);
+      var slug = null;
+      for (var i = 0; i < parts.length; i++) {
+        if (NAV_ORDER.indexOf(parts[i]) !== -1) { slug = parts[i]; break; }
+      }
+      if (slug === null) return;
+      var idx = NAV_ORDER.indexOf(slug);
+      var prevSlug = NAV_ORDER[(idx - 1 + NAV_ORDER.length) % NAV_ORDER.length];
+      var nextSlug = NAV_ORDER[(idx + 1) % NAV_ORDER.length];
+
+      function injectStyles(){
+        if (document.getElementById('__nav_style')) return;
+        var s = document.createElement('style');
+        s.id = '__nav_style';
+        s.textContent = [
+          '.__nav_arrow{position:fixed;top:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;',
+          "font:300 32px 'Inter',-apple-system,Arial,sans-serif;line-height:1;color:#1697ff;background:rgba(0,0,0,0.55);",
+          'border:1px solid #1697ff;border-radius:50%;text-decoration:none;cursor:pointer;z-index:99;',
+          'backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transform:translateY(-50%);',
+          'transition:background .15s ease,color .15s ease;user-select:none;}',
+          '.__nav_arrow.left{left:20px} .__nav_arrow.right{right:20px}',
+          '.__nav_arrow:hover{background:#1697ff;color:#000;}',
+          '@keyframes __nav_in_next{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}',
+          '@keyframes __nav_in_prev{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}'
+        ].join('');
+        document.head.appendChild(s);
+      }
+
+      function makeArrow(side, slug){
+        var a = document.createElement('a');
+        a.href = '../' + slug + '/';
+        a.id = '__nav_' + side;
+        a.className = '__nav_arrow ' + side;
+        a.textContent = side === 'left' ? '‹' : '›';
+        a.title = side === 'left' ? 'Previous sketch' : 'Next sketch';
+        a.addEventListener('click', function(e){
+          e.preventDefault();
+          sessionStorage.setItem('__nav_dir', side === 'left' ? 'prev' : 'next');
+          document.body.style.transition = 'transform 360ms ease,opacity 360ms ease';
+          document.body.style.opacity = '0';
+          document.body.style.transform = side === 'left' ? 'translateX(40px)' : 'translateX(-40px)';
+          setTimeout(function(){ location.href = a.href; }, 360);
+        });
+        return a;
+      }
+
+      function init(){
+        injectStyles();
+        var dir = sessionStorage.getItem('__nav_dir');
+        if (dir){
+          sessionStorage.removeItem('__nav_dir');
+          document.body.style.animation = (dir === 'next' ? '__nav_in_next' : '__nav_in_prev') + ' 380ms ease both';
+        }
+        document.body.appendChild(makeArrow('left', prevSlug));
+        document.body.appendChild(makeArrow('right', nextSlug));
+
+        document.addEventListener('keydown', function(e){
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          if (e.key === 'ArrowLeft')  document.getElementById('__nav_left').click();
+          else if (e.key === 'ArrowRight') document.getElementById('__nav_right').click();
+        });
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+      else init();
+    })();
+    </script>
     <script src="sketch.js"></script>
   </body>
 </html>

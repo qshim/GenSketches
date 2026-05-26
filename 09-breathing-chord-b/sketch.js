@@ -15,9 +15,9 @@ const N = 5;
 // rotates slowly around centre, no positional drift, ignores sound).
 // trail: null = no echo, 'inverted' = outline rings, 'filled' = solid alpha
 const CONTAINERS = [
-  { size: 380, swap: 'cycle',         roundness: 0.18, motion: 'wave',   trail: 'inverted' },
-  { size: 180, swap: 'random',        roundness: 1.0,  motion: 'rotate', trail: 'filled'   },
-  { size: 100, swap: 'cycle-reverse', roundness: 1.0,  motion: 'wave',   trail: null       }
+  { size: 380, swap: 'cycle',         roundness: 0.18, motion: 'wave',   trail: 'inverted', trailLength: 10 },
+  { size: 180, swap: 'random',        roundness: 1.0,  motion: 'rotate', trail: 'filled',   trailLength: 20 },
+  { size: 100, swap: 'cycle-reverse', roundness: 1.0,  motion: 'wave',   trail: null,       trailLength: 0  }
 ];
 const ROTATE_RAD_PER_SEC = 0.45; // faster spin (~14s per revolution)
 const SWAP_INTERVAL_MS = 1000;
@@ -37,8 +37,8 @@ const SOUND_PULSE_THRESHOLD = 0.18; // loudness above this triggers blue↔white
 const SOUND_PULSE_PERIOD = 1.3;    // seconds per blue↔white↔blue cycle
 const SOUND_PULSE_STAGGER = 0.18;  // seconds between successive circles
 
-// Echo trail config
-const TRAIL_LENGTH = 20;
+// Echo trail config — per-container trailLength is read from CONTAINERS.
+const TRAIL_SAMPLE_EVERY = 1; // capture every frame
 
 // Audio
 let mic;
@@ -245,6 +245,7 @@ function draw() {
       pulseRealT,
       trails: containerStates[ci].trails,
       trailStyle: CONTAINERS[ci].trail || null,
+      trailLength: CONTAINERS[ci].trailLength || 0,
       motion: CONTAINERS[ci].motion || 'wave'
     });
     if (ci === placedContainers.length - 1) lastResult = { cont, result, roundness };
@@ -262,19 +263,17 @@ function drawContainerFrame(cx, cy, size, roundness) {
   const r = (size / 2) * roundness;
   push();
   rectMode(CENTER);
-  noFill();
-  stroke(fg);
-  strokeWeight(CONTAINER_STROKE);
+  noStroke();
+  fill(34); // #222 — solid area fill, no outline
   rect(cx, cy, size, size, r);
   pop();
-  noStroke();
 }
 
 function renderChord(opts) {
   const { cx, cy, size, sizeFrac, ampFactor, blend, listen,
           globalLiftBase, breath, breathAmt, t, introT, order, roundness,
           pulseLevel = 0, pulseRealT = 0, trails = null,
-          trailStyle = 'inverted', motion = 'wave' } = opts;
+          trailStyle = 'inverted', trailLength = 0, motion = 'wave' } = opts;
 
   const halfSize = size / 2;
   const innerSize = size - CONTAINER_PAD * 2;
@@ -379,11 +378,13 @@ function renderChord(opts) {
   }
 
   // ----- 4. Update echo trails (if this container has them) ----------
-  if (trails) {
+  // Sample positions every Nth frame so trail circles sit visibly apart
+  // rather than overlapping each other into a jagged blob.
+  if (trails && trailLength > 0 && frameCount % TRAIL_SAMPLE_EVERY === 0) {
     for (let i = 0; i < N; i++) {
       const p = positions[i];
       trails[i].push({ x: p.x, y: p.y });
-      if (trails[i].length > TRAIL_LENGTH) trails[i].shift();
+      if (trails[i].length > trailLength) trails[i].shift();
     }
   }
 
@@ -400,24 +401,21 @@ function renderChord(opts) {
   // 5a. Trails first (so the current circles sit on top).
   if (trails) {
     for (let i = 0; i < N; i++) {
-      const w = whitenessFor(i);
-      const cr = lerp(22, 255, w);
-      const cg = lerp(151, 255, w);
-      const cb = 255;
       const hist = trails[i];
       const last = hist.length - 1;
       for (let h = 0; h < last; h++) {
-        const ageT = last === 0 ? 0 : h / last;
-        const alpha = ageT * 200;
+        const ageT = last === 0 ? 0 : h / last; // 0 = oldest, 1 = newest
         if (trailStyle === 'inverted') {
-          // Outline rings (inverted from solid blue fill)
+          // Big container (380): blue stroke only, 30% → 100% opacity.
+          const alpha = lerp(77, 255, ageT);
           noFill();
-          stroke(cr, cg, cb, alpha);
-          strokeWeight(1.2);
+          stroke(22, 151, 255, alpha);
+          strokeWeight(1.5);
         } else {
-          // Solid filled blue with decreasing alpha (same colour as live)
+          // Smaller container (180): solid blue fill, 30% → 100% opacity.
+          const alpha = lerp(77, 255, ageT);
           noStroke();
-          fill(cr, cg, cb, alpha);
+          fill(22, 151, 255, alpha);
         }
         ellipse(hist[h].x, hist[h].y, actualR * 2, actualR * 2);
       }
@@ -519,7 +517,8 @@ function createDomReplica() {
   c.style.cssText = [
     'position:fixed',
     'box-sizing:border-box',
-    'border:1.5px solid ' + fg,
+    'background:#222',
+    'border:none',
     'pointer-events:none',
     'z-index:2',
     'left:0',

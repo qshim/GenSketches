@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.13/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.13/lib/addons/p5.sound.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8" />
   </head>
@@ -12,7 +11,7 @@
     /* slider-override-marker */
       if (new URLSearchParams(location.search).get("hide") === "1") {
         var styleEl = document.createElement("style");
-        styleEl.textContent = "input[type=range],label,.p5Canvas + *:not(canvas),body > div:not(main),#__rec_btn,#__rec_indicator,#__rec_countdown{display:none !important;visibility:hidden !important;} body{background:#000 !important;}";
+        styleEl.textContent = "input[type=range],label,.p5Canvas + *:not(canvas),body > div:not(main),#__rec_btn,#__rec_indicator,#__rec_countdown,.__nav_arrow{display:none !important;visibility:hidden !important;} body{background:#000 !important;}";
         document.head.appendChild(styleEl);
       }
     (function(){
@@ -100,7 +99,7 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureButton); else ensureButton();
     })();
     </script>
-        <script>
+    <script>
     /* nav-marker — prev/next arrows on the page edges */
     (function(){
       var NAV_ORDER = [
@@ -114,9 +113,7 @@
         '11-rect-of-circles',
         '12-rect-of-circles-b'
       ];
-      // Skip in headless/?hide=1 capture mode
       if (new URLSearchParams(location.search).get('hide') === '1') return;
-
       var parts = location.pathname.split('/').filter(Boolean);
       var slug = null;
       for (var i = 0; i < parts.length; i++) {
@@ -126,7 +123,6 @@
       var idx = NAV_ORDER.indexOf(slug);
       var prevSlug = NAV_ORDER[(idx - 1 + NAV_ORDER.length) % NAV_ORDER.length];
       var nextSlug = NAV_ORDER[(idx + 1) % NAV_ORDER.length];
-
       function injectStyles(){
         if (document.getElementById('__nav_style')) return;
         var s = document.createElement('style');
@@ -144,7 +140,6 @@
         ].join('');
         document.head.appendChild(s);
       }
-
       function makeArrow(side, slug){
         var a = document.createElement('a');
         a.href = '../' + slug + '/';
@@ -162,7 +157,6 @@
         });
         return a;
       }
-
       function init(){
         injectStyles();
         var dir = sessionStorage.getItem('__nav_dir');
@@ -172,14 +166,12 @@
         }
         document.body.appendChild(makeArrow('left', prevSlug));
         document.body.appendChild(makeArrow('right', nextSlug));
-
         document.addEventListener('keydown', function(e){
           if (e.metaKey || e.ctrlKey || e.altKey) return;
           if (e.key === 'ArrowLeft')  document.getElementById('__nav_left').click();
           else if (e.key === 'ArrowRight') document.getElementById('__nav_right').click();
         });
       }
-
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
       else init();
     })();
