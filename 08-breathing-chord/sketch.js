@@ -267,7 +267,7 @@ function createControls() {
   tempoSlider.parent(panel); tempoSlider.size(150);
 
   ampLabel = createDiv(); ampLabel.parent(panel);
-  ampSlider = createSlider(0.0, 1.0, 0.96, 0.01);
+  ampSlider = createSlider(0.0, 1.0, 0.52, 0.01);
   ampSlider.parent(panel); ampSlider.size(150);
 
   blendLabel = createDiv(); blendLabel.parent(panel);
@@ -279,15 +279,15 @@ function createControls() {
   sizeSlider.parent(panel); sizeSlider.size(150);
 
   micLabel = createDiv(); micLabel.parent(panel);
-  micSlider = createSlider(0.0, 2.0, 2.00, 0.01);
+  micSlider = createSlider(0.0, 2.0, 0.63, 0.01);
   micSlider.parent(panel); micSlider.size(150);
 
   toneLabel = createDiv(); toneLabel.parent(panel);
-  toneSlider = createSlider(0.0, 2.0, 2.00, 0.01);
+  toneSlider = createSlider(0.0, 2.0, 1.19, 0.01);
   toneSlider.parent(panel); toneSlider.size(150);
 
   breathLabel = createDiv(); breathLabel.parent(panel);
-  breathSlider = createSlider(0.0, 1.5, 0.0, 0.01);
+  breathSlider = createSlider(0.0, 1.5, 0.24, 0.01);
   breathSlider.parent(panel); breathSlider.size(150);
 }
 

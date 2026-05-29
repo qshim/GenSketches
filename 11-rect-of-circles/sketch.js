@@ -45,13 +45,26 @@ function draw() {
 
   const maxCornerR = (cellSize / 2) * round;
 
-  // ----- Top row: instances, filled, roundness morphs L → R --------
-  fill(fg);
+  // Moving object position (computed first so the top row can react to it)
+  const period = 4.2;
+  const phase  = (Math.sin(t * (Math.PI * 2 / period)) + 1) / 2; // 0..1
+  const mx = lerp(startX, endX, phase);
+  const myCornerR = maxCornerR * (1 - phase);
+
+  // ----- Top row: instances, filled, roundness morphs L → R.
+  //       Each instance turns white as the moving shape's x aligns with it.
   noStroke();
   for (let i = 0; i < count; i++) {
     const x = startX + i * step;
     const tRound = count > 1 ? i / (count - 1) : 0;
     const thisCornerR = maxCornerR * (1 - tRound);
+
+    // Proximity of the moving shape's x to this instance (0..1, peak when aligned)
+    const prox = constrain(1 - Math.abs(x - mx) / (cellSize * 1.1), 0, 1);
+    const cr = lerp(22, 255, prox);
+    const cg = lerp(151, 255, prox);
+    const cb = 255;
+    fill(cr, cg, cb);
     rect(x, topY, cellSize, cellSize, thisCornerR);
   }
 
@@ -61,13 +74,7 @@ function draw() {
   line(startX, bottomY, endX, bottomY);
   noStroke();
 
-  // ----- Moving object on the line — bounces left↔right, roundness
-  //       morphs from max (left end) to 0 (right end) along its path
-  const period = 4.2;
-  const phase  = (Math.sin(t * (Math.PI * 2 / period)) + 1) / 2; // 0..1
-  const mx = lerp(startX, endX, phase);
-  const myCornerR = maxCornerR * (1 - phase);
-
+  // ----- Moving object on the line
   fill(fg);
   rect(mx, bottomY, cellSize, cellSize, myCornerR);
 }

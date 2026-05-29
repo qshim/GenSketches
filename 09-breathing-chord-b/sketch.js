@@ -264,7 +264,7 @@ function drawContainerFrame(cx, cy, size, roundness) {
   push();
   rectMode(CENTER);
   noStroke();
-  fill(34); // #222 — solid area fill, no outline
+  fill(22, 151, 255); // Samsung blue — solid area fill
   rect(cx, cy, size, size, r);
   pop();
 }
@@ -399,23 +399,24 @@ function renderChord(opts) {
   }
 
   // 5a. Trails first (so the current circles sit on top).
+  // Shapes are now BLACK on the blue card; trails are also black.
   if (trails) {
     for (let i = 0; i < N; i++) {
       const hist = trails[i];
       const last = hist.length - 1;
       for (let h = 0; h < last; h++) {
-        const ageT = last === 0 ? 0 : h / last; // 0 = oldest, 1 = newest
+        const ageT = last === 0 ? 0 : h / last;
         if (trailStyle === 'inverted') {
-          // Big container (380): blue stroke only, 30% → 100% opacity.
+          // Big container (380): black stroke only, 30% → 100% opacity.
           const alpha = lerp(77, 255, ageT);
           noFill();
-          stroke(22, 151, 255, alpha);
+          stroke(0, 0, 0, alpha);
           strokeWeight(1.5);
         } else {
-          // Smaller container (180): solid blue fill, 30% → 100% opacity.
+          // Smaller container (180): solid black fill, 30% → 100% opacity.
           const alpha = lerp(77, 255, ageT);
           noStroke();
-          fill(22, 151, 255, alpha);
+          fill(0, 0, 0, alpha);
         }
         ellipse(hist[h].x, hist[h].y, actualR * 2, actualR * 2);
       }
@@ -423,13 +424,11 @@ function renderChord(opts) {
     noStroke();
   }
 
-  // 5b. Current (live) circles at full opacity, each with its own tint.
+  // 5b. Current (live) circles — black, sound pulse lerps to white.
   for (let i = 0; i < N; i++) {
     const w = whitenessFor(i);
-    const cr = lerp(22, 255, w);
-    const cg = lerp(151, 255, w);
-    const cb = 255;
-    fill(cr, cg, cb);
+    const v = lerp(0, 255, w); // black ↔ white
+    fill(v, v, v);
     const p = positions[i];
     ellipse(p.x, p.y, p.r * 2, p.r * 2);
   }
@@ -517,7 +516,7 @@ function createDomReplica() {
   c.style.cssText = [
     'position:fixed',
     'box-sizing:border-box',
-    'background:#222',
+    'background:#1697ff',
     'border:none',
     'pointer-events:none',
     'z-index:2',
@@ -530,7 +529,7 @@ function createDomReplica() {
     const d = document.createElement('div');
     d.style.cssText = [
       'position:absolute',
-      'background:' + fg,
+      'background:#000',
       'border-radius:50%',
       'left:0',
       'top:0',

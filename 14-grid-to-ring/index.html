@@ -2,25 +2,16 @@
 <html lang="en">
   <head>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.13/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.13/lib/addons/p5.sound.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">  
-    
-    
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8" />
-
   </head>
   <body>
-    <main>
-    </main>
-        <script>
+    <main></main>
+    <script>
     /* slider-override-marker */
-      // Optional: hide p5 DOM controls (sliders/labels) when ?hide=1
       if (new URLSearchParams(location.search).get("hide") === "1") {
         var styleEl = document.createElement("style");
-        styleEl.textContent = "input[type=range],label,.p5Canvas + *:not(canvas),body > div:not(main),#__rec_btn,#__rec_indicator,#__rec_countdown{display:none !important;visibility:hidden !important;} body{background:#000 !important;}";
+        styleEl.textContent = "input[type=range],label,.p5Canvas + *:not(canvas),body > div:not(main),#__rec_btn,#__rec_indicator,#__rec_countdown,.__nav_arrow{display:none !important;visibility:hidden !important;} body{background:#000 !important;}";
         document.head.appendChild(styleEl);
       }
     (function(){
@@ -40,104 +31,54 @@
       }, 5);
     })();
     </script>
-        <script>
-    /* recorder-marker — bottom-left button toggles canvas recording */
+    <script>
+    /* recorder-marker */
     (function(){
       var rec = null, chunks = [], recording = false, mime = '';
-      var btn, dot;
-
+      var btn;
       function pickMime(){
-        var c = [
-          'video/mp4;codecs=avc1.640034,mp4a.40.2',
-          'video/mp4;codecs=avc1.42E01E',
-          'video/mp4',
-          'video/webm;codecs=vp9',
-          'video/webm;codecs=vp8',
-          'video/webm'
-        ];
-        for (var i=0;i<c.length;i++){
-          if (window.MediaRecorder && MediaRecorder.isTypeSupported(c[i])) return c[i];
-        }
+        var c = ['video/mp4;codecs=avc1.640034,mp4a.40.2','video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+        for (var i=0;i<c.length;i++){ if (window.MediaRecorder && MediaRecorder.isTypeSupported(c[i])) return c[i]; }
         return '';
       }
-
       function ensureButton(){
         if (document.getElementById('__rec_btn')) return;
         var style = document.createElement('style');
-        style.textContent = [
-          '#__rec_btn{position:fixed;left:20px;bottom:20px;z-index:99999;display:flex;align-items:center;gap:10px;',
-          'background:rgba(0,0,0,0.72);color:#e8e8e8;border:1px solid #1697ff;border-radius:999px;',
-          'padding:10px 18px 10px 14px;font:600 12px Inter,-apple-system,sans-serif;letter-spacing:.08em;',
-          'cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);user-select:none;',
-          'transition:background .15s ease,color .15s ease,border-color .15s ease;}',
-          '#__rec_btn:hover{background:#1697ff;color:#000;}',
-          '#__rec_btn .__dot{width:10px;height:10px;border-radius:50%;background:#1697ff;transition:background .15s ease;}',
-          '#__rec_btn:hover .__dot{background:#000;}',
-          '#__rec_btn.is-recording{border-color:#ff2d2d;color:#fff;}',
-          '#__rec_btn.is-recording:hover{background:#ff2d2d;color:#fff;}',
-          '#__rec_btn.is-recording .__dot{background:#ff2d2d;animation:recblink 1s infinite;}',
-          '#__rec_btn.is-recording:hover .__dot{background:#fff;}',
-          '@keyframes recblink{0%,100%{opacity:1}50%{opacity:.25}}',
-          '#__rec_countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:99998;background:rgba(0,0,0,0.55);color:#1697ff;font:700 220px Inter,-apple-system,sans-serif;letter-spacing:-0.04em;pointer-events:none;}'
-        ].join('');
+        style.textContent = ['#__rec_btn{position:fixed;left:20px;bottom:20px;z-index:99999;display:flex;align-items:center;gap:10px;','background:rgba(0,0,0,0.72);color:#e8e8e8;border:1px solid #1697ff;border-radius:999px;','padding:10px 18px 10px 14px;font:600 12px Inter,-apple-system,sans-serif;letter-spacing:.08em;','cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);user-select:none;','transition:background .15s ease,color .15s ease,border-color .15s ease;}','#__rec_btn:hover{background:#1697ff;color:#000;}','#__rec_btn .__dot{width:10px;height:10px;border-radius:50%;background:#1697ff;transition:background .15s ease;}','#__rec_btn:hover .__dot{background:#000;}','#__rec_btn.is-recording{border-color:#ff2d2d;color:#fff;}','#__rec_btn.is-recording:hover{background:#ff2d2d;color:#fff;}','#__rec_btn.is-recording .__dot{background:#ff2d2d;animation:recblink 1s infinite;}','#__rec_btn.is-recording:hover .__dot{background:#fff;}','@keyframes recblink{0%,100%{opacity:1}50%{opacity:.25}}','#__rec_countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:99998;background:rgba(0,0,0,0.55);color:#1697ff;font:700 220px Inter,-apple-system,sans-serif;letter-spacing:-0.04em;pointer-events:none;}'].join('');
         document.head.appendChild(style);
-
         btn = document.createElement('button');
-        btn.id = '__rec_btn';
-        btn.type = 'button';
-        btn.setAttribute('aria-label', 'Record canvas');
+        btn.id = '__rec_btn'; btn.type = 'button'; btn.setAttribute('aria-label','Record canvas');
         btn.innerHTML = '<span class="__dot"></span><span class="__label">RECORD</span>';
-        btn.addEventListener('click', function(e){
-          e.preventDefault();
-          btn.blur();
-          if (!recording) beginCountdown(); else stop();
-        });
+        btn.addEventListener('click', function(e){ e.preventDefault(); btn.blur(); if (!recording) beginCountdown(); else stop(); });
         document.body.appendChild(btn);
-        dot = btn.querySelector('.__dot');
       }
-
       function setBtnState(on){
         if (!btn) return;
         btn.classList.toggle('is-recording', on);
         btn.querySelector('.__label').textContent = on ? 'STOP & EXPORT' : 'RECORD';
       }
-
       function beginCountdown(){
         if (recording) return;
         var overlay = document.getElementById('__rec_countdown');
-        if (!overlay){
-          overlay = document.createElement('div');
-          overlay.id = '__rec_countdown';
-          document.body.appendChild(overlay);
-        }
+        if (!overlay){ overlay = document.createElement('div'); overlay.id = '__rec_countdown'; document.body.appendChild(overlay); }
         overlay.style.display = 'flex';
-        var n = 3;
-        overlay.textContent = String(n);
-        if (btn) { btn.querySelector('.__label').textContent = 'STARTING IN ' + n; }
+        var n = 3; overlay.textContent = String(n);
+        if (btn) btn.querySelector('.__label').textContent = 'STARTING IN ' + n;
         var iv = setInterval(function(){
           n -= 1;
-          if (n > 0){
-            overlay.textContent = String(n);
-            if (btn) btn.querySelector('.__label').textContent = 'STARTING IN ' + n;
-          } else {
-            clearInterval(iv);
-            overlay.style.display = 'none';
-            start();
-          }
+          if (n > 0){ overlay.textContent = String(n); if (btn) btn.querySelector('.__label').textContent = 'STARTING IN ' + n; }
+          else { clearInterval(iv); overlay.style.display = 'none'; start(); }
         }, 1000);
       }
-
       function start(){
         var canvas = document.querySelector('canvas');
-        if (!canvas){ alert('[REC] canvas not ready yet — try again in a moment.'); return; }
-        if (!window.MediaRecorder){ alert('[REC] MediaRecorder not supported in this browser.'); return; }
+        if (!canvas){ alert('[REC] canvas not ready yet'); return; }
+        if (!window.MediaRecorder){ alert('[REC] MediaRecorder not supported'); return; }
         var stream;
-        try { stream = canvas.captureStream(60); }
-        catch(e){ alert('[REC] captureStream failed: ' + e.message); return; }
+        try { stream = canvas.captureStream(60); } catch(e){ alert('[REC] '+e.message); return; }
         mime = pickMime();
-        try {
-          rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 12000000 } : { videoBitsPerSecond: 12000000 });
-        } catch(e){ alert('[REC] MediaRecorder init failed: ' + e.message); return; }
+        try { rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 12000000 } : { videoBitsPerSecond: 12000000 }); }
+        catch(e){ alert('[REC] '+e.message); return; }
         chunks = [];
         rec.ondataavailable = function(e){ if (e.data && e.data.size) chunks.push(e.data); };
         rec.onstop = function(){
@@ -151,25 +92,14 @@
           document.body.appendChild(a); a.click(); a.remove();
           setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
           setBtnState(false);
-          console.log('[REC] saved', a.download, '(' + (blob.size/1048576).toFixed(2) + ' MB,', mime + ')');
         };
-        rec.start();
-        recording = true;
-        setBtnState(true);
-        console.log('[REC] started, mime =', mime || 'default');
+        rec.start(); recording = true; setBtnState(true);
       }
-
-      function stop(){
-        if (rec && rec.state !== 'inactive') rec.stop();
-        recording = false;
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', ensureButton);
-      } else { ensureButton(); }
+      function stop(){ if (rec && rec.state !== 'inactive') rec.stop(); recording = false; }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureButton); else ensureButton();
     })();
     </script>
-        <script>
+    <script>
     /* nav-marker — prev/next arrows on the page edges */
     (function(){
       var NAV_ORDER = [
@@ -182,12 +112,9 @@
         '09-breathing-chord-b',
         '11-rect-of-circles',
         '12-rect-of-circles-b',
-        '13-ai-sparkle',
-        '15-living-orb-b'
+        '13-ai-sparkle'
       ];
-      // Skip in headless/?hide=1 capture mode
       if (new URLSearchParams(location.search).get('hide') === '1') return;
-
       var parts = location.pathname.split('/').filter(Boolean);
       var slug = null;
       for (var i = 0; i < parts.length; i++) {
@@ -197,7 +124,6 @@
       var idx = NAV_ORDER.indexOf(slug);
       var prevSlug = NAV_ORDER[(idx - 1 + NAV_ORDER.length) % NAV_ORDER.length];
       var nextSlug = NAV_ORDER[(idx + 1) % NAV_ORDER.length];
-
       function injectStyles(){
         if (document.getElementById('__nav_style')) return;
         var s = document.createElement('style');
@@ -215,7 +141,6 @@
         ].join('');
         document.head.appendChild(s);
       }
-
       function makeArrow(side, slug){
         var a = document.createElement('a');
         a.href = '../' + slug + '/';
@@ -233,7 +158,6 @@
         });
         return a;
       }
-
       function init(){
         injectStyles();
         var dir = sessionStorage.getItem('__nav_dir');
@@ -243,14 +167,12 @@
         }
         document.body.appendChild(makeArrow('left', prevSlug));
         document.body.appendChild(makeArrow('right', nextSlug));
-
         document.addEventListener('keydown', function(e){
           if (e.metaKey || e.ctrlKey || e.altKey) return;
           if (e.key === 'ArrowLeft')  document.getElementById('__nav_left').click();
           else if (e.key === 'ArrowRight') document.getElementById('__nav_right').click();
         });
       }
-
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
       else init();
     })();

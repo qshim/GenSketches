@@ -1,10 +1,8 @@
 :root {
   --fg: #1697ff;
-  --bg: #000;
+  --bg: #0c0c14;   /* matches sketch 13 preview background (12,12,20) */
   --text: #e8e8e8;
-  --muted: #6a6a6a;
-  --pad-x: 48px;
-  --preview-w: 520px;
+  --muted: #8a8a8a;
 }
 
 * { box-sizing: border-box; }
@@ -16,179 +14,87 @@ html, body {
   color: var(--text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
 }
 
 header {
-  padding: 64px var(--pad-x) 32px;
+  position: fixed;
+  top: 24px;
+  left: 32px;
+  z-index: 100;
+  pointer-events: none;
 }
 
-.title h1 {
+header h1 {
   margin: 0;
-  font-size: 42px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--fg);
-}
-
-.subtitle {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-main {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-}
-
-main.stack {
-  display: block;
-  column-count: 3;
-  column-gap: 16px;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 0 var(--pad-x) var(--pad-x);
-}
-
-main.stack .canvas-wrap {
-  position: relative;
-  display: block;
-  width: 100%;
-  margin: 0 0 16px;
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  page-break-inside: avoid;
-  aspect-ratio: auto;
-  overflow: hidden;
-}
-
-main.stack .canvas-wrap video,
-main.stack .canvas-wrap img {
-  position: static;
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-@media (max-width: 700px) {
-  main.stack { column-count: 2; }
-}
-
-@media (max-width: 460px) {
-  main.stack { column-count: 1; }
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr var(--preview-w);
-  align-items: center;
-  min-height: 360px;
-  padding: 32px var(--pad-x);
-  background: var(--bg);
-  gap: 48px;
-}
-
-.info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 560px;
-}
-
-.row-id {
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  color: var(--fg);
-  font-variant-numeric: tabular-nums;
-}
-
-.info h2 {
-  margin: 0;
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
-}
-
-.info p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--muted);
-}
-
-.info ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.info ul li {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--muted);
-}
-
-.open {
-  margin-top: 8px;
-  font-size: 12px;
-  letter-spacing: 0.08em;
   color: var(--fg);
-  text-decoration: none;
-  align-self: flex-start;
 }
 
-.open:hover { text-decoration: underline; }
-
-.canvas-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 10;
+.stage {
+  position: fixed;
+  inset: 0;
   background: var(--bg);
   overflow: hidden;
-  display: block;
-  justify-self: end;
-  border: none;
+  --col-w: 0px;
+  --gutter: 14px;
 }
 
-.canvas-wrap .slide,
-.canvas-wrap img,
-.canvas-wrap video {
+
+.card {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.10);
+  cursor: pointer;
+  display: block;
+  transform-origin: 50% 50%;
+  background: #0c0c14;
+  /* soft darker-blue glow shadow (very subtle) */
+  box-shadow: 0 8px 28px rgba(12, 80, 160, 0.12), 0 2px 8px rgba(12, 80, 160, 0.075);
+  will-change: transform, width, height;
+}
+
+.card video, .card img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover;       /* card aspect now matches video — cover is exact */
   display: block;
+  pointer-events: none;
 }
 
-.canvas-wrap:hover { opacity: 0.92; }
-
-footer {
-  padding: 24px var(--pad-x) 48px;
+.hint {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  z-index: 100;
   font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.08em;
   color: var(--muted);
+  background: rgba(20, 20, 20, 0.85);
+  padding: 8px 16px;
+  border-radius: 999px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  /* Elastic entrance: very fast launch then a damped settle (fast→slow),
+     hold, then a gentle descent. */
+  animation: hintCycle 1.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@media (max-width: 1100px) {
-  :root { --preview-w: 420px; }
-}
-
-@media (max-width: 860px) {
-  :root { --pad-x: 24px; }
-  header { padding-top: 40px; padding-bottom: 24px; }
-  .title h1 { font-size: 32px; }
-  .row {
-    grid-template-columns: 1fr;
-    min-height: 0;
-    gap: 16px;
-    padding: 24px var(--pad-x);
-  }
-  .canvas-wrap { width: 100%; }
-  footer { padding-top: 16px; padding-bottom: 32px; }
+@keyframes hintCycle {
+  0%   { transform: translateX(-50%) translateY(70px); }   /* hidden below */
+  16%  { transform: translateX(-50%) translateY(-12px); }  /* fast launch + overshoot */
+  24%  { transform: translateX(-50%) translateY(5px); }    /* bounce back */
+  30%  { transform: translateX(-50%) translateY(-2px); }   /* smaller overshoot */
+  36%  { transform: translateX(-50%) translateY(0); }      /* settle */
+  /* hold, then a gentle, slower descent */
+  80%  { transform: translateX(-50%) translateY(0);
+         animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1); }
+  100% { transform: translateX(-50%) translateY(70px); }
 }

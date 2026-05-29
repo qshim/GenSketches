@@ -3,51 +3,278 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GenSketches — Samsung Agent Visual Studies</title>
+    <title>GenSketches</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header>
-      <div class="title">
-        <h1>GenSketches</h1>
-      </div>
+      <h1>GenSketches</h1>
     </header>
 
-    <main class="stack">
-      <a class="canvas-wrap" href="01-morphing-grid/index.html" target="_blank" rel="noopener">
+    <main id="stage" class="stage">
+      <!-- data-aspect = video width/height (used to set card aspect) -->
+      <a class="card" href="01-morphing-grid/index.html" target="_blank" rel="noopener" data-aspect="1.77">
         <video src="previews/01-morphing-grid.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="02-wave-squares/index.html" target="_blank" rel="noopener">
-        <video src="previews/02-wave-squares.mp4" autoplay loop muted playsinline preload="metadata"></video>
-      </a>
-      <a class="canvas-wrap" href="03-wave-circles/index.html" target="_blank" rel="noopener">
+      <a class="card" href="03-wave-circles/index.html" target="_blank" rel="noopener" data-aspect="1.14">
         <video src="previews/03-wave-circles.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="05-clock-mask/index.html" target="_blank" rel="noopener">
+      <a class="card" href="05-clock-mask/index.html" target="_blank" rel="noopener" data-aspect="2.89" data-small="1">
         <video src="previews/05-clock-mask.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="06-living-orb/index.html" target="_blank" rel="noopener">
+      <a class="card" href="06-living-orb/index.html" target="_blank" rel="noopener" data-aspect="1.07" data-spans="5,6">
         <video src="previews/06-living-orb.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="08-breathing-chord/index.html" target="_blank" rel="noopener">
+      <a class="card" href="08-breathing-chord/index.html" target="_blank" rel="noopener" data-aspect="1.77">
         <video src="previews/08-breathing-chord.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="09-breathing-chord-b/index.html" target="_blank" rel="noopener">
+      <a class="card" href="09-breathing-chord-b/index.html" target="_blank" rel="noopener" data-aspect="1.66">
         <video src="previews/09-breathing-chord-b.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="11-rect-of-circles/index.html" target="_blank" rel="noopener">
+      <a class="card" href="11-rect-of-circles/index.html" target="_blank" rel="noopener" data-aspect="3.93">
         <video src="previews/11-rect-of-circles.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="12-rect-of-circles-b/index.html" target="_blank" rel="noopener">
+      <a class="card" href="12-rect-of-circles-b/index.html" target="_blank" rel="noopener" data-aspect="1.88">
         <video src="previews/12-rect-of-circles-b.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
-      <a class="canvas-wrap" href="13-ai-sparkle/index.html" target="_blank" rel="noopener">
+      <a class="card" href="13-ai-sparkle/index.html" target="_blank" rel="noopener" data-aspect="1.00" data-spans="4,5">
         <video src="previews/13-ai-sparkle.mp4" autoplay loop muted playsinline preload="metadata"></video>
+      </a>
+      <a class="card" href="15-living-orb-b/index.html" target="_blank" rel="noopener" data-aspect="1.55" data-spans="5,6">
+        <video src="previews/15-living-orb-b.mp4" autoplay loop muted playsinline preload="metadata"></video>
       </a>
     </main>
 
+    <div class="hint" id="hint">press any key — grid ↔ ring</div>
+
+    <script>
+      (function () {
+        const COLS = 36;              // finer grid → tighter packing, less overlap
+        const COL_SPANS = [6, 7, 8];  // default widths (max 8 cells)
+        const SMALL_SPANS = [4, 5, 6]; // for cards marked data-small="1"
+        const GUTTER = 14;            // px gap between cards
+        const TRANSITION_MS = 900;
+        const RING_HOLD_MS = 5500;
+        const RING_RADIUS_FRAC = 0.30;
+        const RING_CARD_FRAC = 0.055;
+        const ROTATION_RATE = 0.0035;
+
+        const stage = document.getElementById('stage');
+        const hint = document.getElementById('hint');
+        const cards = Array.from(document.querySelectorAll('.card'));
+
+        // Track hover per card (used for the ring-mode 3× enlarge)
+        cards.forEach(el => {
+          el._hover = false;
+          el._scale = 1;
+          el.addEventListener('mouseenter', () => { el._hover = true; });
+          el.addEventListener('mouseleave', () => { el._hover = false; });
+        });
+
+        let state = 'grid';
+        let rotation = 0;
+        let rafId = null;
+        let holdTimeout = null;
+
+        function vw() { return window.innerWidth; }
+        function vh() { return window.innerHeight; }
+
+        function setTransition(ms) {
+          cards.forEach(c => {
+            c.style.transition = ms === 0
+              ? 'none'
+              : `transform ${ms}ms cubic-bezier(0.65,0,0.35,1), width ${ms}ms cubic-bezier(0.65,0,0.35,1), height ${ms}ms cubic-bezier(0.65,0,0.35,1)`;
+          });
+        }
+
+        function layoutGrid() {
+          const cellW = vw() / COLS;
+          const cellH = cellW;
+          const ROWS = Math.max(1, Math.floor(vh() / cellH));
+          const occupied = Array.from({ length: ROWS }, () => new Array(COLS).fill(false));
+
+          // Keep 1 cell of margin on every side (so cards never touch the
+          // edges or overlap the GenSketches title at top-left).
+          const MARGIN_COLS = 1;
+          const MARGIN_ROWS = 1;
+          for (let rr = 0; rr < ROWS; rr++) {
+            for (let m = 0; m < MARGIN_COLS; m++) {
+              occupied[rr][m] = true;
+              occupied[rr][COLS - 1 - m] = true;
+            }
+          }
+          for (let cc = 0; cc < COLS; cc++) {
+            for (let m = 0; m < MARGIN_ROWS; m++) {
+              if (occupied[m]) occupied[m][cc] = true;
+              if (occupied[ROWS - 1 - m]) occupied[ROWS - 1 - m][cc] = true;
+            }
+          }
+
+          function fits(r, c, cw, ch) {
+            if (r + ch > ROWS || c + cw > COLS) return false;
+            for (let dr = 0; dr < ch; dr++) {
+              for (let dc = 0; dc < cw; dc++) {
+                if (occupied[r + dr][c + dc]) return false;
+              }
+            }
+            return true;
+          }
+          function mark(r, c, cw, ch) {
+            for (let dr = 0; dr < ch; dr++) {
+              for (let dc = 0; dc < cw; dc++) {
+                occupied[r + dr][c + dc] = true;
+              }
+            }
+          }
+
+          // Build a spec per card, then place LARGEST first so big cards
+          // claim space while the grid is empty (greatly reduces overlap).
+          const specs = cards.map(el => {
+            const aspect = parseFloat(el.dataset.aspect) || 1;
+            // Per-card span pool: data-spans="5,6" overrides; else small/default.
+            let pool;
+            if (el.dataset.spans) {
+              pool = el.dataset.spans.split(',').map(n => parseInt(n, 10));
+            } else {
+              pool = el.dataset.small === '1' ? SMALL_SPANS : COL_SPANS;
+            }
+            let cw = pool[Math.floor(Math.random() * pool.length)];
+            cw = Math.min(cw, COLS);
+            return { el, aspect, cw };
+          });
+          specs.sort((a, b) => b.cw - a.cw);
+
+          specs.forEach(spec => {
+            let { el, aspect, cw } = spec;
+            // Shrink the card (in whole columns) until it fits somewhere.
+            // Card visual size is inset by GUTTER so gaps appear between cards.
+            let placed = false, r = 0, c = 0, ch = 1, widthPx = 0, heightPx = 0;
+            for (; cw >= 2 && !placed; cw--) {
+              widthPx = cw * cellW - GUTTER;          // inset for gutter
+              heightPx = widthPx / aspect;
+              ch = Math.max(1, Math.ceil((heightPx + GUTTER) / cellH));
+              const candidates = [];
+              for (let rr = 0; rr + ch <= ROWS; rr++) {
+                for (let cc = 0; cc + cw <= COLS; cc++) {
+                  if (fits(rr, cc, cw, ch)) candidates.push([rr, cc]);
+                }
+              }
+              if (candidates.length > 0) {
+                [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+                mark(r, c, cw, ch);
+                placed = true;
+              }
+            }
+            if (!placed) {
+              cw = 2; widthPx = cw * cellW - GUTTER; heightPx = widthPx / aspect;
+              r = 0; c = 0;
+            }
+
+            // Centre the card inside its reserved cells (half gutter each side)
+            const x = c * cellW + GUTTER / 2;
+            const y = r * cellH + GUTTER / 2;
+            el.style.width = widthPx + 'px';
+            el.style.height = heightPx + 'px';
+            el.style.transform = `translate(${x}px, ${y}px) rotate(0deg)`;
+            el.style.zIndex = '1';
+          });
+        }
+
+        function layoutRing(rot) {
+          const W = vw(), H = vh();
+          const cx = W / 2, cy = H / 2;
+          const r = Math.min(W, H) * RING_RADIUS_FRAC;
+          const s = Math.min(W, H) * RING_CARD_FRAC;
+          cards.forEach((el, i) => {
+            const a = (i / cards.length) * Math.PI * 2 - Math.PI / 2 + rot;
+            const x = cx + Math.cos(a) * r - s / 2;
+            const y = cy + Math.sin(a) * r - s / 2;
+            // Hover in ring mode → smoothly scale up to 3×
+            const target = el._hover ? 3 : 1;
+            el._scale = (el._scale || 1) + (target - (el._scale || 1)) * 0.2;
+            el.style.width = s + 'px';
+            el.style.height = s + 'px';
+            el.style.transform = `translate(${x}px, ${y}px) scale(${el._scale})`;
+            el.style.zIndex = el._hover ? '200' : '50';
+          });
+        }
+
+        function startRotation() {
+          if (state !== 'ring') return;
+          setTransition(0);
+          let lastT = performance.now();
+          function spin(now) {
+            if (state !== 'ring') return;
+            const dt = now - lastT; lastT = now;
+            rotation += ROTATION_RATE * (dt / 16.67);
+            layoutRing(rotation);
+            rafId = requestAnimationFrame(spin);
+          }
+          rafId = requestAnimationFrame(spin);
+
+          holdTimeout = setTimeout(() => {
+            if (state !== 'ring') return;
+            cancelAnimationFrame(rafId);
+            rafId = null;
+            state = 'toGrid';
+            setTransition(TRANSITION_MS);
+            layoutGrid();
+            setTimeout(() => { if (state === 'toGrid') state = 'grid'; }, TRANSITION_MS);
+          }, RING_HOLD_MS);
+        }
+
+        function toggle() {
+          if (state === 'grid') {
+            hint.style.display = 'none';
+            state = 'toRing';
+            setTransition(TRANSITION_MS);
+            rotation = 0;
+            layoutRing(0);
+            setTimeout(() => {
+              if (state === 'toRing') { state = 'ring'; startRotation(); }
+            }, TRANSITION_MS);
+          } else if (state === 'ring') {
+            if (rafId) cancelAnimationFrame(rafId);
+            if (holdTimeout) clearTimeout(holdTimeout);
+            rafId = null;
+            state = 'toGrid';
+            setTransition(TRANSITION_MS);
+            layoutGrid();
+            setTimeout(() => { if (state === 'toGrid') state = 'grid'; }, TRANSITION_MS);
+          }
+        }
+
+        function applyGridGuide() {
+          // Sets CSS vars so the grid guide aligns to live cell width + gutter.
+          stage.style.setProperty('--col-w', (vw() / COLS) + 'px');
+          stage.style.setProperty('--gutter', GUTTER + 'px');
+        }
+
+        // Init
+        setTransition(0);
+        applyGridGuide();
+        layoutGrid();
+        requestAnimationFrame(() => setTransition(TRANSITION_MS));
+
+        window.addEventListener('keydown', (e) => {
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          if (e.target && /input|textarea/i.test(e.target.tagName)) return;
+          toggle();
+        });
+        document.body.addEventListener('click', (e) => {
+          if (e.target.closest('.card')) return;
+          toggle();
+        });
+
+        window.addEventListener('resize', () => {
+          applyGridGuide();
+          if (state === 'grid') layoutGrid();
+          else if (state === 'ring') layoutRing(rotation);
+        });
+      })();
+    </script>
   </body>
 </html>
